@@ -3,26 +3,20 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from tensorflow.python.framework import ops
 
-import gc
 import numpy as np
 import tensorflow as tf
 #tf.config.run_functions_eagerly(True)
 
 # tf.enable_eager_execution()
 
+import src.multiG as multiG
 # import tensorflow.compat.v1 as tf
 # tf.disable_v2_behavior()
 import time
-from multiG import multiG 
 import model as model
-import optim_new
 from optim_new import riemmanian_gradient_descent as r
-from optim_new import riemmanian_adam as ra
 
-
-from optim_new.euclidean import Euclidean
 from optim_new.poincare import Poincare
 from optim_new.sphere import Sphere
 
@@ -44,6 +38,102 @@ class Trainer(object):
         self.multiG_save_path = 'this-multiG.bin'
         self.L1=False #
         self.sess = None
+
+        self.vec_e_vert = {}
+        self.vec_r_vert = {}
+        self.vec_e_horiz = {}
+        self.vec_r_horiz = {}
+        self.mat = np.array([0])
+
+    def reload_model(self, method='transe', bridge='CG-one',  dim1=300, dim2=50, batch_sizeK1=1024, batch_sizeK2=1024,
+        batch_sizeA=32, a1=5., a2=0.5, m1=0.5, m2=1.0, vertical_links_A='euclidean', horizontal_links_A='euclidean',
+        vertical_links_B='euclidean', horizontal_links_B='euclidean', vertical_links_AM='euclidean',
+        save_path = 'this-model.ckpt', other_save_path = 'this-model.h5', multiG_save_path = 'this-multiG.bin',
+        log_save_path = 'tf_log', L1=False, lr_A_vert=0.01, lr_A_horiz=0.01, lr_B_vert=0.01, lr_B_horiz=0.01, lr_AM=0.01):
+
+        self.method = method
+        self.bridge = bridge
+        # self.multiG.KG1.wv_dim = self.multiG.KG2.wv_dim = wv_dim
+        self.vertical_links_A = vertical_links_A
+        self.horizontal_links_A = horizontal_links_A
+        self.vertical_links_B = vertical_links_B
+        self.horizontal_links_B = horizontal_links_B
+        self.vertical_links_AM = vertical_links_AM
+        self.lr_A_vert = lr_A_vert
+        self.lr_A_horiz = lr_A_horiz
+        self.lr_B_vert = lr_B_vert
+        self.lr_B_horiz = lr_B_horiz
+        self.lr_AM = lr_AM
+
+        # TODO set new save path to not overwrite.
+        self.multiG_save_path = multiG_save_path
+        self.log_save_path = log_save_path
+        self.save_path = save_path
+        self.other_save_path = other_save_path
+
+        ''' Alex added from tester1.py'''
+        self.multiG = multiG.multiG()
+        self.multiG.load(multiG_save_path)
+
+        self.dim1 = self.multiG.dim1 = self.multiG.KG1.dim = dim1  # update dim
+        self.dim2 = self.multiG.dim2 = self.multiG.KG2.dim = dim2  # update dim
+        self.batch_sizeK1 = self.multiG.batch_sizeK1 = batch_sizeK1
+        self.batch_sizeK2 = self.multiG.batch_sizeK2 = batch_sizeK2
+        self.batch_sizeA = self.multiG.batch_sizeA = batch_sizeA
+        self.L1 = self.multiG.L1 = L1
+
+        # self.tf_parts = self.set_tf_parts_IO()
+        self.tf_parts = model.TFParts(num_rels1=self.multiG.KG1.num_rels(),
+                                      num_ents1=self.multiG.KG1.num_ents(),
+                                      num_rels2=self.multiG.KG2.num_rels(),
+                                      num_ents2=self.multiG.KG2.num_ents(),
+                                      method=self.method,
+                                      bridge=self.bridge,
+                                      dim1=dim1,
+                                      dim2=dim2,
+                                      vertical_links_A=vertical_links_A,
+                                      horizontal_links_A=horizontal_links_A,
+                                      vertical_links_B=vertical_links_B,
+                                      horizontal_links_B=horizontal_links_B,
+                                      vertical_links_AM=vertical_links_AM,
+                                      batch_sizeK1=self.batch_sizeK1,
+                                      batch_sizeK2=self.batch_sizeK2,
+                                      batch_sizeA=self.batch_sizeA,
+                                      L1=self.L1)
+        self.tf_parts._m1 = m1
+        self.tf_parts._m2 = m2
+
+        config = tf.compat.v1.ConfigProto()
+        config.gpu_options.allow_growth = True
+        self.sess = sess = tf.compat.v1.Session(config=config)
+
+        # self.tf_parts._saver.restore(sess, save_path)  # load it
+        self.tf_parts.load_weights(self.other_save_path)  # load it
+        self.vec_e_horiz[1] = np.array(self.tf_parts._ht1_horiz)
+        self.vec_e_horiz[2] = np.array(self.tf_parts._ht2_horiz)
+        self.vec_e_vert[1] = np.array(self.tf_parts._ht1_vert)
+        self.vec_e_vert[2] = np.array(self.tf_parts._ht2_vert)
+
+        self.vec_r_horiz[1] = np.array(self.tf_parts._r1_horiz)
+        self.vec_r_horiz[2] = np.array(self.tf_parts._r2_horiz)
+        self.vec_r_vert[1] = np.array(self.tf_parts._r1_vert)
+        self.vec_r_vert[2] = np.array(self.tf_parts._r2_vert)
+
+        if self.tf_parts.bridge == "CMP-double":
+            value_ht1_vert, value_r1_vert, value_ht2_vert, value_r2_vert, \
+            value_Mc, value_bc, value_Me, value_be = sess.run(
+                [self.tf_parts._ht1_norm_vert, self.tf_parts._r1_vert,
+                 self.tf_parts._ht2_norm_vert, self.tf_parts._r2_vert,
+                 self.tf_parts._Mc, self.tf_parts._bc, self.tf_parts._Me, self.tf_parts._be])  # extract values.
+
+            self._Mc = np.array(value_Mc)
+            self._bc = np.array(value_bc)
+            self._Me = np.array(value_Me)
+            self._be = np.array(value_be)
+
+        # config = tf.compat.v1.ConfigProto()
+        # config.gpu_options.allow_growth = True
+        self.writer = tf.summary.create_file_writer(log_save_path)
 
     def build(self, multiG, method='transe', bridge='CG-one',  dim1=300, dim2=50, batch_sizeK1=1024, batch_sizeK2=1024, 
         batch_sizeA=32, a1=5., a2=0.5, m1=0.5, m2=1.0, vertical_links_A='euclidean', horizontal_links_A='euclidean',
@@ -96,8 +186,7 @@ class Trainer(object):
         self.tf_parts._m2 = m2
         # config = tf.ConfigProto()
         config = tf.compat.v1.ConfigProto()
-        #config.gpu_options.allow_growth = True
-        config.gpu_options.allow_growth = False
+        config.gpu_options.allow_growth = True
         # self.sess = tf.Session(config=config)
         # self.sess.run(tf.global_variables_initializer())
         # self.writer = tf.summary.FileWriter(log_save_path, graph=tf.get_default_graph())
@@ -559,33 +648,42 @@ class Trainer(object):
             print("Time use: %d" % (time.time() - t0))
             if np.isnan(epoch_lossKM) or np.isnan(epoch_lossAM):
                 print("Training collapsed.")
-                print("KM loss: ",str(epoch_lossKM))
-                print("AM loss: ",str(epoch_lossAM))
                 return
             if (epoch + 1) % save_every_epoch == 0:
-                #pass
-                #this_save_path = self.tf_parts._saver.save(self.sess, self.save_path)
-                self.tf_parts.save_weights(self.other_save_path)
+                # pass
+                this_save_path = self.tf_parts._saver.save(self.sess, self.save_path)
                 self.multiG.save(self.multiG_save_path)
-                print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (self.other_save_path, self.multiG_save_path))
-                #print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (this_save_path, self.multiG_save_path))
-            print("Clearing Cache")
-            print(gc.collect()) # if it's done something you should see a number being outputted
-            limit_mem()
-            #torch.cuda.empty_cache()
+                print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (this_save_path, self.multiG_save_path))
 
         # self.tf_parts._saver.save(self.sess, self.save_path)
         self.tf_parts.save_weights(self.other_save_path)
         self.multiG.save(self.multiG_save_path)
 
-# Added by Alex
-# source: https://forums.fast.ai/t/tip-clear-tensorflow-gpu-memory/1979
-def limit_mem():
-    tf.keras.backend.clear_session()
-#    K.get_session().close()
-#    cfg = K.tf.ConfigProto()
-#    cfg.gpu_options.allow_growth = True
-#    K.set_session(K.tf.Session(config=cfg))
+    def resume_training(self, current_epoch, epochs=2, save_every_epoch=1, lr=0.001, a1=0.1, a2=0.05, m1=0.5, m2=1.0, AM_fold=1, half_loss_per_epoch=-1):
+
+        assert epochs > current_epoch
+
+        self.tf_parts._m1 = m1
+        t0 = time.time()
+
+        for epoch in range(current_epoch, epochs):
+            if half_loss_per_epoch > 0 and (epoch + 1) % half_loss_per_epoch == 0:
+                lr /= 2.
+            epoch_lossKM, epoch_lossAM = self.train1epoch_associative(self.sess, lr, a1, a2, epoch, AM_fold)
+            print("Time use: %d" % (time.time() - t0))
+            if np.isnan(epoch_lossKM) or np.isnan(epoch_lossAM):
+                print("Training collapsed.")
+                return
+            if (epoch + 1) % save_every_epoch == 0:
+                # pass
+                this_save_path = self.tf_parts._saver.save(self.sess, self.save_path)
+                self.multiG.save(self.multiG_save_path)
+                print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (
+                this_save_path, self.multiG_save_path))
+
+        # self.tf_parts._saver.save(self.sess, self.save_path)
+        self.tf_parts.save_weights(self.other_save_path)
+        self.multiG.save(self.multiG_save_path)
 
 
 # A safer loading is available in Tester, with parameters like batch_size and dim recorded in the corresponding Data component
@@ -595,13 +693,17 @@ def load_tfparts(multiG, method='transe', bridge='CG-one', dim1=300, dim2=100, b
                             num_ents1=multiG.KG1.num_ents(), 
                             num_rels2=multiG.KG2.num_rels(), 
                             num_ents2=multiG.KG2.num_ents(),
-                            method=self.method,
-                            bridge=self.bridge, 
+                            method=method,
+                            bridge=bridge,
                             dim1=dim1, 
-                            dim2=dim2, 
-                            batch_sizeK=batch_sizeK, 
+                            dim2=dim2,
+                            batch_sizeK1=batch_sizeK1,
+                            batch_sizeK2=batch_sizeK,
                             batch_sizeA=batch_sizeA, 
                             L1=L1)
+
+
+
     #with tf.Session() as sess:
     sess = tf.Session()
     tf_parts._saver.restore(sess, save_path)
