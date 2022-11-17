@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 from tensorflow.python.framework import ops
 
+import gc
 import numpy as np
 import tensorflow as tf
 #tf.config.run_functions_eagerly(True)
@@ -95,7 +96,8 @@ class Trainer(object):
         self.tf_parts._m2 = m2
         # config = tf.ConfigProto()
         config = tf.compat.v1.ConfigProto()
-        config.gpu_options.allow_growth = True
+        #config.gpu_options.allow_growth = True
+        config.gpu_options.allow_growth = False
         # self.sess = tf.Session(config=config)
         # self.sess.run(tf.global_variables_initializer())
         # self.writer = tf.summary.FileWriter(log_save_path, graph=tf.get_default_graph())
@@ -557,17 +559,33 @@ class Trainer(object):
             print("Time use: %d" % (time.time() - t0))
             if np.isnan(epoch_lossKM) or np.isnan(epoch_lossAM):
                 print("Training collapsed.")
+                print("KM loss: ",str(epoch_lossKM))
+                print("AM loss: ",str(epoch_lossAM))
                 return
             if (epoch + 1) % save_every_epoch == 0:
-                pass
-                # this_save_path = self.tf_parts._saver.save(self.sess, self.save_path)
-                # self.multiG.save(self.multiG_save_path)
-                # print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (this_save_path, self.multiG_save_path))
+                #pass
+                #this_save_path = self.tf_parts._saver.save(self.sess, self.save_path)
+                self.tf_parts.save_weights(self.other_save_path)
+                self.multiG.save(self.multiG_save_path)
+                print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (self.other_save_path, self.multiG_save_path))
+                #print("MTransE saved in file: %s. Multi-graph saved in file: %s" % (this_save_path, self.multiG_save_path))
+            print("Clearing Cache")
+            print(gc.collect()) # if it's done something you should see a number being outputted
+            limit_mem()
+            #torch.cuda.empty_cache()
 
         # self.tf_parts._saver.save(self.sess, self.save_path)
         self.tf_parts.save_weights(self.other_save_path)
         self.multiG.save(self.multiG_save_path)
 
+# Added by Alex
+# source: https://forums.fast.ai/t/tip-clear-tensorflow-gpu-memory/1979
+def limit_mem():
+    tf.keras.backend.clear_session()
+#    K.get_session().close()
+#    cfg = K.tf.ConfigProto()
+#    cfg.gpu_options.allow_growth = True
+#    K.set_session(K.tf.Session(config=cfg))
 
 
 # A safer loading is available in Tester, with parameters like batch_size and dim recorded in the corresponding Data component

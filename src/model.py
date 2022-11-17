@@ -11,7 +11,9 @@ import math
 # import tensorflow.compat.v1 as tf_v1
 # tf_v1.disable_v2_behavior()
 import tensorflow as tf
-import optimization.geoopt.geoopt.optim as o
+import sys
+sys.path.insert(0,'../src')
+import optimization.geoopt as o
 from multiG import multiG
 import pickle
 from utils import circular_correlation, np_ccorr
