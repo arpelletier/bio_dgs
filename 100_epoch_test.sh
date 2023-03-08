@@ -1,2 +1,0 @@
-python ./run/test_triples.py --modelname "epoch-tuning/type_yago_epoch-100_EUC_EUC-exp-optim-original-param" --model transe_CMP-linear --testfile "../data/yago/yago_ontonet_test.txt" --method "transe" --resultfolder ./results/test_triples --bridge "CMP-linear" --graphtype "ontology"
-python ./run/test_triples.py --modelname "epoch-tuning/type_yago_epoch-100_SPH_HYP-exp-optim-original-param" --model transe_CMP-linear --testfile "../data/yago/yago_ontonet_test.txt" --method "transe" --resultfolder ./results/test_triples --bridge "CMP-linear" --graphtype "ontology"

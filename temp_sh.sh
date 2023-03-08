@@ -1,2 +1,0 @@
-python ./run/test_triples.py --modelname "epoch-tuning/type_biomedkg_epoch-20_EUC_EUC-exp-optim-original-param" --model transe_CMP-linear --testfile "./kg2f_ontologies_test.txt" --method "transe" --resultfolder ./results/test_triples --bridge "CMP-linear" --graphtype "ontology"
-python ./run/test_triples.py --modelname "epoch-tuning/type_biomedkg_epoch-20_SPH_HYP-exp-optim-original-param" --model transe_CMP-linear --testfile "./kg2f_ontologies_test.txt" --method "transe" --resultfolder ./results/test_triples --bridge "CMP-linear" --graphtype "ontology"
