@@ -160,23 +160,8 @@ def train():
 
 	m_train.train(epochs=args.total_epochs, save_every_epoch=1, lr=0.0005, a1=args.a1, a2=args.a2, m1=args.m1, m2=args.m2, AM_fold=args.fold)
 
-def limit_gpu_memory_growth():
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    if gpus:
-        # Restrict TensorFlow to only use the first GPU
-        try:
-            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
-            tf.config.experimental.set_memory_growth(gpus[0], True)
-            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPU")
-        except RuntimeError as e:
-            # Visible devices must be set before GPUs have been initialized
-          print(e)
-          return False
-    return True
 
 
-limit_gpu_memory_growth()
 train()
 
 

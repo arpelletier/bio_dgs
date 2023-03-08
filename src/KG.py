@@ -113,20 +113,30 @@ class KG(object):
         print("Loaded triples from", filename, ". #triples, #ents, #rels:", len(self.triples), self.n_ents, self.n_rels)
 
         # vertical triples
+        vert_nodes = set()
+        vert_rels = set()
         for h,r,t in self.triples_vert:
             tph_array[r][h] += 1.
             hpt_array[r][t] += 1.
+            vert_nodes.add(h)
+            vert_nodes.add(t)
+            vert_rels.add(r)
         self.tph = np.mean(tph_array, axis = 1)
         self.hpt = np.mean(hpt_array, axis = 1)
-        print("Loaded vertical triples from", filename, ". #triples, #ents, #rels:", len(self.triples_vert), self.n_ents, self.n_rels)
+        print("Loaded vertical triples from", filename, ". #triples, #ents, #rels:", len(self.triples_vert), len(vert_nodes), len(vert_rels))
 
         # horizontal triples
+        horiz_nodes = set()
+        horiz_rels = set()
         for h,r,t in self.triples_horiz:
             tph_array[r][h] += 1.
             hpt_array[r][t] += 1.
+            horiz_nodes.add(h)
+            horiz_nodes.add(t)
+            horiz_rels.add(r)
         self.tph = np.mean(tph_array, axis = 1)
         self.hpt = np.mean(hpt_array, axis = 1)
-        print("Loaded horizontal triples from", filename, ". #triples, #ents, #rels:", len(self.triples_horiz), self.n_ents, self.n_rels)
+        print("Loaded horizontal triples from", filename, ". #triples, #ents, #rels:", len(self.triples_horiz), len(horiz_nodes), len(horiz_rels))
 
     def load_word2vec(self, filepath, splitter=' '):
         self.tokens, emb = [], []
