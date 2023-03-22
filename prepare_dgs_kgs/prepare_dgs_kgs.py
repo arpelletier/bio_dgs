@@ -182,14 +182,14 @@ def check_bridges(kg1_df, kg2_df, alignf_df, print_freq=False):
 	kg1f_nodes = set(kg1_df['h']).union(set(kg1_df['t']))
 	kg2f_nodes = set(kg2_df['h']).union(set(kg2_df['t']))
 	
-	temp = {}
+	freq_bool_vec = {}
 	for h,t in zip(alignf_df['h'],alignf_df['t']):
 		
 		if print_freq:
-			asdf = (h in kg1f_nodes, h in kg2f_nodes, t in kg1f_nodes, t in kg2f_nodes)
-			if asdf not in temp:
-				temp[asdf]=0
-			temp[asdf]+=1
+			bool_vec = (h in kg1f_nodes, h in kg2f_nodes, t in kg1f_nodes, t in kg2f_nodes)
+			if bool_vec not in freq_bool_vec:
+				freq_bool_vec[bool_vec]=0
+			freq_bool_vec[bool_vec]+=1
 		h_in_kg1f = (h in kg1f_nodes, h in kg2f_nodes)
 		t_in_kg2f = (t in kg1f_nodes, t in kg2f_nodes)
 		if not h_in_kg1f[0] or not t_in_kg2f[1]:
@@ -197,14 +197,33 @@ def check_bridges(kg1_df, kg2_df, alignf_df, print_freq=False):
 				print(h,h_in_kg1f,t,t_in_kg2f)
 
 	if print_freq:
-		print(temp)
+		renaming_vector = {(True,False,False,True):"Correct edges",
+						(False,True,True,False):"Need to flip",
+						(False,False,False,True):"Dangling Instance (head)",
+						(True,False,False,False):"Dangling Instance (tail)",
+						(False,False,True,True):"Head missing, Tail found in onto and inst",
+						(True,True,False,False):"Tail missing, Head found in onto and inst",
+						(False,True,False,False):"Dangling instance (tail) and needs to flip",
+						(False,False,True,False):"Dangling instance (head) and needs to flip",
+						(True,True,False,False):"Head in both, Tail in neither",
+						(False,False,True,True):"Tail in both, Head in neither",
+						(True,True,True,True):"Head and Tail found in both",
+						(False,False,False,False):"Head and Tail found in none"}
+		for bv, name in renaming_vector.items():
+			if bv in freq_bool_vec:
+				freq = freq_bool_vec[bv]
+				if freq > 0:
+					print(name, freq)
 
-output_directory = '/home/arpelletier/data/biomedkg_edges_9-9-2022/output'
+#input_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/biomedkg_edges_03-08-2023'
+#output_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/dgs_input'
+#input_lists = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/bio_dgs/input_lists/all_kg_edges.txt'
+input_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/biomedkg_edges_03-22-2023'
+output_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/dgs_input'
+input_lists = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/bio_dgs/input_lists/2023-03-22_all_kg_edges.txt'
+
 output_file_names = ['kg2f_ontologies.txt','alignf_bridges.txt','kg1f_instances.txt']
 output_file_names = [os.path.join(output_directory,f) for f in output_file_names]
-input_directory = '/home/arpelletier/data/biomedkg_edges_9-9-2022/data/'
-#input_lists = '/home/arpelletier/data/biomedkg_edges_9-9-2022/input_lists/all_files.txt'
-input_lists = '/home/arpelletier/data/biomedkg_edges_9-9-2022/input_lists/new_all_links.txt'
 ontologies, bridges, instances = parse_input_list(input_lists)
 
 include_headers=False
