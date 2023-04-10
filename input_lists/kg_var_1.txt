@@ -1,0 +1,28 @@
+### ontologies ###
+Disease_(MeSH_Tree)_2_Disease_(MeSH_Tree).csv
+Function_(GO)_2_Function_(GO).csv
+Pathway_(Reactome)_2_Pathway_(Reactome).csv
+atc_class_tree.csv
+
+### bridges ###
+Disease_(MeSH_Tree)_2_Disease_(MeSH).csv
+Protein_(UniProt)_2_Function_(GO).csv
+Protein_(UniProt)_2_Pathway_(Reactome).csv
+edges_disease2pathway_reactome.csv
+drugbank_drug_to_atc_class.csv
+
+### instances ###
+Disease_(MeSH)_2_Disease_(MeSH).csv
+Compound_(DrugBank)_2_Compound_(DrugBank).csv
+Compound_(DrugBank)_2_Compound_(MeSH).csv
+Compound_(DrugBank)_2_Disease_(MeSH).csv
+Compound_(DrugBank)_2_Pathway_(Reactome).csv
+Compound_(DrugBank)_2_Protein_(UniProt).csv
+Compound_(DrugBank)_2_Reaction_(Reactome).csv
+Compound_(MeSH)_2_Compound_(MeSH).csv
+Compound_(MeSH)_2_Disease_(MeSH).csv
+Compound_(MeSH)_2_Pathway_(Reactome).csv
+Compound_(MeSH)_2_Protein_(UniProt).csv
+Compound_(MeSH)_2_Reaction_(Reactome).csv
+Protein_(UniProt)_2_Protein_(UniProt).csv
+Protein_(UniProt)_2_Reaction_(Reactome).csv
