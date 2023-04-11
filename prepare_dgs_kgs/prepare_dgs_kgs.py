@@ -1,3 +1,4 @@
+import sys
 from grape import Graph
 import os
 import pandas as pd
@@ -108,7 +109,8 @@ def read_and_merge_files(input_directory, files_to_merge, default_weight=1.0, re
 	return edges_df, nodes_df
 
 
-def train_test_split(edges_file,nodes_file,training_size=0.7, include_headers=False, include_weights=False):
+def train_test_split(edges_file,nodes_file,training_size=0.93, include_headers=False, include_weights=False):
+#def train_test_split(edges_file,nodes_file,training_size=0.7, include_headers=False, include_weights=False):
 	# load graph as grape graph
 	g = Graph.from_csv(
 	  directed=False, 
@@ -218,12 +220,19 @@ def check_bridges(kg1_df, kg2_df, alignf_df, print_freq=False, out_file_name="re
 						#print(name, freq)
 						out_file.write(" ".join(str(s) for s in (name,freq))+"\n")
 
-#input_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/biomedkg_edges_03-08-2023'
+### Parse arguments ###
+if len(sys.argv) < 4:
+	print("Incorrect usage.")
+	print("python prepare_dgs_kgs.py <input_directory> <output_directory> <input_lists>")
+	print("Example: python prepare_dgs_kgs.py /home/arpelletier/workspace/dgs/2023-03-08_github_dgs/biomedkg_edges_03-23-2023 /home/arpelletier/workspace/dgs/2023-03-08_github_dgs/dgs_input /home/arpelletier/workspace/dgs/2023-03-08_github_dgs/bio_dgs/input_lists/2023-03-23_all_kg_edges.txt")
+	sys.exit(0)
+
+input_directory = sys.argv[1]
+output_directory = sys.argv[2]
+input_lists = sys.argv[3]
+#input_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/biomedkg_edges_03-23-2023'
 #output_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/dgs_input'
-#input_lists = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/bio_dgs/input_lists/all_kg_edges.txt'
-input_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/biomedkg_edges_03-23-2023'
-output_directory = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/dgs_input'
-input_lists = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/bio_dgs/input_lists/2023-03-23_all_kg_edges.txt'
+#input_lists = '/home/arpelletier/workspace/dgs/2023-03-08_github_dgs/bio_dgs/input_lists/2023-03-23_all_kg_edges.txt'
 
 output_file_names = ['kg2f_ontologies.txt','alignf_bridges.txt','kg1f_instances.txt']
 output_file_names = [os.path.join(output_directory,f) for f in output_file_names]
@@ -231,7 +240,7 @@ ontologies, bridges, instances = parse_input_list(input_lists)
 
 include_headers=False
 include_weights=False
-output_readouts=True
+output_readouts=False
 
 ontologies_edges_nodes = read_and_merge_files(input_directory, ontologies, rename_ontology=True)
 bridges_edges_nodes = read_and_merge_files(input_directory, bridges)
@@ -242,12 +251,12 @@ if output_readouts:
 	check_bridges(instances_edges_nodes[0],
 				ontologies_edges_nodes[0],
 				bridges_edges_nodes[0], 
-				print_freq=True, out_file_name = "a2023-03-29_freq_readout.txt")
+				print_freq=True, out_file_name = "2023-03-29_freq_readout.txt")
 	# bridge readout
 	check_bridges(instances_edges_nodes[0],
 				ontologies_edges_nodes[0],
 				bridges_edges_nodes[0],
-				print_freq=False, out_file_name = "a2023-03-29_bridge_readout.txt")
+				print_freq=False, out_file_name = "2023-03-29_bridge_readout.txt")
 
 summary_out = []
 for out_file_name, edges_nodes in zip(output_file_names,[ontologies_edges_nodes,bridges_edges_nodes,instances_edges_nodes]):

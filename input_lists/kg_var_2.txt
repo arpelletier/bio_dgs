@@ -26,5 +26,4 @@ Compound_(MeSH)_2_Protein_(UniProt).csv
 Compound_(MeSH)_2_Reaction_(Reactome).csv
 Disease_(MeSH)_sharesgenes_Disease_(MeSH).csv
 Disease_(MeSH)_sharesvariants_Disease_(MeSH).csv
-Protein_(UniProt)_2_Protein_(UniProt).csv
 Protein_(UniProt)_2_Reaction_(Reactome).csv

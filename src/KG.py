@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 import time
 from tqdm import tqdm
+import json
 
 class KG(object):
     '''This class stores triple data, descriptions, and word embeddings for a langauge.
@@ -247,6 +248,43 @@ class KG(object):
         self.avg_embed_padded = np.array(self.avg_embed_padded, dtype=np.float32)
         assert (not np.any(np.isnan(self.desc_embed_padded)))
         print("Padded desc embeddings to", self.desc_embed_padded.shape)
+
+    def load_id_to_emb(self, id_to_emb_file):
+
+        # Load json with embeddings
+        id_to_emb = json.load(open(id_to_emb_file,'r'))
+
+        # Make sure the embedding dimensions are all the same
+        e_dims = set([len(emb) for _,emb in id_to_emb.items()])
+        if len(e_dims) > 1:
+            print ("Fail: Embeddings not the same length")
+            return
+        elif list(e_dims)[0] != self.dim:
+            print ("Fail: Embeddings are not the same dimension as model")
+            return
+
+        # Initialize embedding for all entities
+        count = 0
+        self.desc_embed = {}
+        self.desc_embed_padded = []
+        self.avg_embed_padded = []
+        for i in range(self.num_ents()):
+            ent = self.ents[i]
+            # Random initialize embedding if no embedding available
+            emb = np.random.rand(self.dim)
+            # emb = np.zeros(self.dim) # or should it be zeros?
+            if ent in id_to_emb:
+                emb = id_to_emb[ent]            
+                count += 1
+            # store
+            ent_id = self.ent_str2index(ent)
+            self.desc_embed[ent_id] = np.array(emb)
+            self.desc_embed_padded.append(emb)
+            self.avg_embed_padded.append(emb)
+        self.desc_embed_padded = np.array(self.desc_embed_padded, dtype=np.float32)#np.reshape(np.array(self.desc_embed_padded), [-1, self.desc_length * self.wv_dim, 1]) 
+        self.avg_embed_padded = np.array(self.avg_embed_padded, dtype=np.float32)
+        print("%d out of %d embeddings loaded from %s"%(count,len(self.desc_embed_padded),id_to_emb_file))
+             
     
     def map_descriptions(self, titlefile, tokenfile, splitter=' ', lower=True, stop_words=None, padding_front=False):
         desc_length = self.desc_length
